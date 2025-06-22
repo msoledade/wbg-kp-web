@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+}
+
+.speech-bubble-user::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  border: 10px solid transparent;
+  border-left-color: #3b82f6;
+  /* Corresponds to bg-blue-500 */
+  border-bottom-color: #3b82f6;
+  transform: translateX(8px);
+}
+
+.speech-bubble-assistant::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  border: 10px solid transparent;
+  border-right-color: white;
+  /* Corresponds to bg-white */
+  border-bottom-color: white;
+  transform: translateX(-8px);
+}
+
+.dark .speech-bubble-assistant::after {
+  border-right-color: #1f2937;
+  /* Corresponds to dark:bg-gray-800 */
+  border-bottom-color: #1f2937;
+}
