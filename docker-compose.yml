@@ -11,10 +11,10 @@ services:
     container_name: web-app-container
     restart: unless-stopped
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.kp-web-app.rule=Host(`wbgkp.quanti.ca`)"
-      - "traefik.http.routers.kp-web-app.entrypoints=web"
-      - "traefik.http.services.kp-web-app.loadbalancer.server.port=80"
+      - "traefik.backend=kp-web-app"
+      - "traefik.frontend.rule=Host:wbgkp.quanti.ca"
       - "traefik.docker.network=web"
+      - "traefik.port=80"
+      - "traefik.frontend.entryPoints=http,https"
     networks:
       - web
