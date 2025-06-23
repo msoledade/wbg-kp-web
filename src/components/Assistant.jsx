@@ -23,6 +23,9 @@ export default function Assistant() {
   const [messages, setMessages] = useState([]);
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [country, setCountry] = useState('my country');
+  const [countryLoading, setCountryLoading] = useState(true);
+  const [showStarters, setShowStarters] = useState(true);
   
   const messagesEndRef = useRef(null);
   const API_URL = import.meta.env.VITE_API_URL;
@@ -42,11 +45,42 @@ export default function Assistant() {
     ]);
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!query.trim() || isLoading) return;
+  useEffect(() => {
+    // Fetch user's country for the third conversation starter
+    fetch('https://ipinfo.io/json')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.country) setCountry(data.country);
+        if (data && data.country && data.country !== 'my country' && data.country.length === 2 && data.country !== 'ZZ') {
+          // Try to get country name from code
+          fetch(`https://restcountries.com/v3.1/alpha/${data.country}`)
+            .then(res => res.json())
+            .then(arr => {
+              if (Array.isArray(arr) && arr[0]?.name?.common) setCountry(arr[0].name.common);
+            })
+            .catch(() => {});
+        }
+      })
+      .catch(() => setCountry('my country'))
+      .finally(() => setCountryLoading(false));
+  }, []);
 
-    const userMessage = { id: Date.now(), role: 'user', content: query };
+  const handleStarter = (starterText) => {
+    setShowStarters(false);
+    setQuery(starterText);
+    setTimeout(() => {
+      document.getElementById('chat-input')?.focus();
+    }, 0);
+    // Immediately send the message
+    handleSubmit({ preventDefault: () => {} }, starterText);
+  };
+
+  const handleSubmit = async (e, overrideQuery) => {
+    e.preventDefault();
+    const sendQuery = overrideQuery !== undefined ? overrideQuery : query;
+    if (!sendQuery.trim() || isLoading) return;
+
+    const userMessage = { id: Date.now(), role: 'user', content: sendQuery };
 
     setMessages(prev => [...prev, userMessage, { id: Date.now() + 1, role: 'assistant', content: '', isStreaming: true }]);
     setQuery('');
@@ -56,7 +90,7 @@ export default function Assistant() {
       const response = await fetch(`${API_URL}/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query: sendQuery }),
       });
 
       if (!response.body) return;
@@ -146,8 +180,34 @@ export default function Assistant() {
 
         {/* Footer Input Area */}
         <footer className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+          {showStarters && (
+            <div className="flex flex-wrap gap-3 mb-4">
+              <button
+                className="px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                disabled={isLoading}
+                onClick={() => handleStarter('Help me draft a digital skills policy for my country')}
+              >
+                Help me draft a digital skills policy for my country
+              </button>
+              <button
+                className="px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                disabled={isLoading}
+                onClick={() => handleStarter('Give me an overview on what are the available resources')}
+              >
+                Give me an overview on what are the available resources
+              </button>
+              <button
+                className="px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                disabled={isLoading || countryLoading}
+                onClick={() => handleStarter(`Tell me a bit about digital skills in ${country}`)}
+              >
+                {countryLoading ? 'Loading country…' : `Tell me a bit about digital skills in ${country}`}
+              </button>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="relative">
             <input
+              id="chat-input"
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}

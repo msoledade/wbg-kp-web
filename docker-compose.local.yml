@@ -1,0 +1,24 @@
+version: "3"
+
+services:
+  web:
+    build: .
+    container_name: web-app-container
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kp-web-app.rule=Host(`wbgkp.localhost`)"
+      - "traefik.http.routers.kp-web-app.entrypoints=web"
+      - "traefik.http.services.kp-web-app.loadbalancer.server.port=80"
+      - "traefik.docker.network=web"
+    volumes:
+      - ./dist:/usr/share/nginx/html
+    env_file:
+      - .env
+    networks:
+      - web
+      - default
+
+networks:
+  web:
+    external: true
