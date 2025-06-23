@@ -12,7 +12,7 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.backend=kp-web-app"
-      - "traefik.frontend.rule=Host:wbgkp.quanti.ca"
+      - "traefik.frontend.rule=Host:wbgkp.evokenet.org"
       - "traefik.docker.network=web"
       - "traefik.port=80"
       - "traefik.frontend.entryPoints=http,https"
