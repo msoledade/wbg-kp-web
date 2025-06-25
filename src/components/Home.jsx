@@ -9,8 +9,8 @@ export default function Home() {
           Welcome to the Knowledge Packs portal. Here you can find curated information and resources on various topics. Use the assistant to ask questions or browse the available packs.
         </p>
         <div className="mt-8 flex justify-center gap-4">
-          <Link to="/kps" className="bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-600 transition-colors">
-            Browse Knowledge Packs
+          <Link to="/repository" className="bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-600 transition-colors">
+            Repository
           </Link>
           <Link to="/assistant" className="bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
             Use Assistant

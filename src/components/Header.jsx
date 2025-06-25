@@ -34,8 +34,8 @@ export default function Header() {
                 <NavLink to="/" className={getLinkClassName}>
                   Home
                 </NavLink>
-                <NavLink to="/kps" className={getLinkClassName}>
-                  Knowledge Packs
+                <NavLink to="/repository" className={getLinkClassName}>
+                  Repository
                 </NavLink>
                 <NavLink to="/assistant" className={getLinkClassName}>
                   Assistant
