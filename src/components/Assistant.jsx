@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import DOMPurify from 'dompurify';
 import { Link } from 'react-router-dom';
 
@@ -18,6 +18,20 @@ const BotIcon = () => (
 const SendIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>;
 const AdminIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
 
+// Arrow SVGs
+const ArrowLeft = () => (
+  <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+);
+const ArrowRight = () => (
+  <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+);
+
+// X (close) icon SVG
+const CloseIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
 
 export default function Assistant() {
   const [messages, setMessages] = useState([]);
@@ -30,6 +44,9 @@ export default function Assistant() {
   const messagesEndRef = useRef(null);
   const API_URL = import.meta.env.VITE_API_URL;
   const LOCAL_STORAGE_KEY = 'wbgkp-assistant-messages';
+  const startersScrollRef = useRef(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -188,110 +205,170 @@ export default function Assistant() {
   // Optional: Clear chat button
   const handleClearChat = () => {
     setMessages([
-      { id: Date.now(), role: 'assistant', content: "Hello! I'm your Digital Skills. Ask me anything about digital skills policies, projects or implementations and I'll do my best to answer." }
+      { id: Date.now(), role: 'assistant', content: "Hello! I'm your Digital Skills Assistant. Ask me anything about digital skills policies, projects or implementations and I'll do my best to answer." }
     ]);
     setShowStarters(true);
     localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
-  return (
-    <div className="flex flex-col h-[calc(100vh-120px)] w-full max-w-4xl bg-white dark:bg-gray-800 shadow-2xl rounded-2xl overflow-hidden mx-auto">
-        {/* Main Chat Area */}
-        <main className="flex-1 overflow-y-auto p-6 space-y-8">
-            {messages.map((msg, index) => {
-                if (isLoading && index === messages.length - 1 && msg.role === 'assistant' && msg.content === '') {
-                    return null;
-                }
-                
-                return (
-                    <div key={msg.id} className={`flex items-start gap-4 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                    {msg.role === 'assistant' && <div className="p-2 rounded-full bg-indigo-500 text-white"><BotIcon /></div>}
-                    
-                    <div className={`relative prose dark:prose-invert max-w-2xl px-5 py-3 rounded-2xl shadow-sm ${msg.role === 'user' ? 'bg-blue-500 text-white rounded-br-none speech-bubble-user' : 'bg-white dark:bg-gray-800 rounded-bl-none speech-bubble-assistant'}`}>
-                        {msg.role === 'assistant' ? (
-                        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(msg.content) }} />
-                        ) : (
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                        )}
-                    </div>
-    
-                    {msg.role === 'user' && <div className="p-2 rounded-full bg-gray-200 dark:bg-gray-700"><UserIcon /></div>}
-                    </div>
-                );
-                })}
-    
-            {isLoading && messages[messages.length - 1]?.role === 'assistant' && messages[messages.length - 1]?.content === '' && (
-                <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-indigo-500 text-white"><BotIcon /></div>
-                <div className="px-5 py-3 rounded-2xl bg-white dark:bg-gray-800 shadow-sm rounded-bl-none">
-                    <div className="flex items-center justify-center space-x-1">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse [animation-delay:-0.3s]"></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse [animation-delay:-0.15s]"></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></div>
-                    </div>
-                </div>
-                </div>
-            )}
-            <div ref={messagesEndRef} />
-        </main>
+  // Check scroll position for arrows
+  const checkScrollArrows = useCallback(() => {
+    const el = startersScrollRef.current;
+    if (!el) return;
+    setShowLeftArrow(el.scrollLeft > 0);
+    setShowRightArrow(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }, []);
 
-        {/* Footer Input Area */}
-        <footer className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-          <div className="mb-2">
-            {showStarters && (
-              <div className="flex flex-wrap gap-3">
+  useEffect(() => {
+    checkScrollArrows();
+    const el = startersScrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', checkScrollArrows);
+    window.addEventListener('resize', checkScrollArrows);
+    return () => {
+      el.removeEventListener('scroll', checkScrollArrows);
+      window.removeEventListener('resize', checkScrollArrows);
+    };
+  }, [checkScrollArrows, showStarters]);
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-120px)] w-full max-w-4xl bg-white dark:bg-gray-800 shadow-2xl rounded-2xl overflow-hidden mx-auto relative">
+      {/* Fixed Clear Chat button top right */}
+      <button
+        className="absolute top-4 right-4 z-30 bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-200 text-gray-500 hover:text-red-600 dark:hover:text-red-700 rounded-full p-2 shadow transition-colors"
+        onClick={handleClearChat}
+        disabled={isLoading}
+        type="button"
+        aria-label="Clear Chat"
+        title="Clear Chat"
+      >
+        <CloseIcon />
+      </button>
+      {/* Main Chat Area */}
+      <main className="flex-1 overflow-y-auto p-6 space-y-8">
+          {messages.map((msg, index) => {
+              if (isLoading && index === messages.length - 1 && msg.role === 'assistant' && msg.content === '') {
+                  return null;
+              }
+              
+              return (
+                  <div key={msg.id} className={`flex items-start gap-4 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                  {msg.role === 'assistant' && <div className="p-2 rounded-full bg-indigo-500 text-white"><BotIcon /></div>}
+                  
+                  <div className={`relative prose dark:prose-invert max-w-2xl px-5 py-3 rounded-2xl shadow-sm ${msg.role === 'user' ? 'bg-blue-500 text-white rounded-br-none speech-bubble-user' : 'bg-white dark:bg-gray-800 rounded-bl-none speech-bubble-assistant'}`}>
+                      {msg.role === 'assistant' ? (
+                      <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(msg.content) }} />
+                      ) : (
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                      )}
+                  </div>
+  
+                  {msg.role === 'user' && <div className="p-2 rounded-full bg-gray-200 dark:bg-gray-700"><UserIcon /></div>}
+                  </div>
+              );
+              })}
+  
+          {isLoading && messages[messages.length - 1]?.role === 'assistant' && messages[messages.length - 1]?.content === '' && (
+              <div className="flex items-start gap-4">
+              <div className="p-2 rounded-full bg-indigo-500 text-white"><BotIcon /></div>
+              <div className="px-5 py-3 rounded-2xl bg-white dark:bg-gray-800 shadow-sm rounded-bl-none">
+                  <div className="flex items-center justify-center space-x-1">
+                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse [animation-delay:-0.3s]"></div>
+                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse [animation-delay:-0.15s]"></div>
+                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></div>
+                  </div>
+              </div>
+              </div>
+          )}
+          <div ref={messagesEndRef} />
+      </main>
+
+      {/* Footer Input Area */}
+      <footer className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <div className="mb-2 relative">
+          {showStarters && (
+            <div className="relative">
+              {/* Fading edges */}
+              {showLeftArrow && (
+                <div className="absolute left-0 top-0 h-full w-8 pointer-events-none z-10" style={{background: 'linear-gradient(to right, rgba(255,255,255,0.9) 70%, transparent)'}} />
+              )}
+              {showRightArrow && (
+                <div className="absolute right-0 top-0 h-full w-8 pointer-events-none z-10" style={{background: 'linear-gradient(to left, rgba(255,255,255,0.9) 70%, transparent)'}} />
+              )}
+              {/* Arrows */}
+              {showLeftArrow && (
                 <button
-                  className="px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/80 dark:bg-gray-800/80 rounded-full p-1 shadow"
+                  style={{marginLeft: 2}}
+                  onClick={() => {
+                    const el = startersScrollRef.current;
+                    if (el) el.scrollBy({ left: -120, behavior: 'smooth' });
+                  }}
+                >
+                  <ArrowLeft />
+                </button>
+              )}
+              {showRightArrow && (
+                <button
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white/80 dark:bg-gray-800/80 rounded-full p-1 shadow"
+                  style={{marginRight: 2}}
+                  onClick={() => {
+                    const el = startersScrollRef.current;
+                    if (el) el.scrollBy({ left: 120, behavior: 'smooth' });
+                  }}
+                >
+                  <ArrowRight />
+                </button>
+              )}
+              <div
+                ref={startersScrollRef}
+                className="flex gap-3 overflow-x-auto scrollbar-hide px-1 min-w-0"
+                style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth' }}
+              >
+                <button
+                  className="px-3 py-1.5 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors text-xs whitespace-nowrap"
                   disabled={isLoading}
                   onClick={() => handleStarter('Help me draft a digital skills policy for my country')}
                 >
                   Help me draft a digital skills policy for my country
                 </button>
                 <button
-                  className="px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                  className="px-3 py-1.5 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors text-xs whitespace-nowrap"
                   disabled={isLoading}
                   onClick={() => handleStarter('Give me an overview on what are the available resources')}
                 >
                   Give me an overview on what are the available resources
                 </button>
                 <button
-                  className="px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                  className="px-3 py-1.5 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors text-xs whitespace-nowrap"
                   disabled={isLoading || countryLoading}
                   onClick={() => handleStarter(`Tell me a bit about digital skills in ${country}`)}
                 >
                   {countryLoading ? 'Loading country…' : `Tell me a bit about digital skills in ${country}`}
                 </button>
               </div>
-            )}
-          </div>
-          <form onSubmit={handleSubmit} className="relative">
-            <input
-              id="chat-input"
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Ask a question..."
-              className="w-full pl-4 pr-12 py-3 bg-gray-100 dark:bg-gray-700 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
-              disabled={isLoading}
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-indigo-500 text-white rounded-full hover:bg-indigo-600 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-colors"
-              disabled={isLoading || !query.trim()}
-            >
-              <SendIcon />
-            </button>
-          </form>
-          <div className="flex justify-center mt-4">
-            <button
-              className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-xs"
-              onClick={handleClearChat}
-              disabled={isLoading}
-            >
-              Clear Chat
-            </button>
-          </div>
-        </footer>
-      </div>
+            </div>
+          )}
+        </div>
+        <form onSubmit={handleSubmit} className="relative">
+          <input
+            id="chat-input"
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Ask a question..."
+            className="w-full pl-4 pr-12 py-3 bg-gray-100 dark:bg-gray-700 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
+            disabled={isLoading}
+          />
+          <button
+            type="submit"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-indigo-500 text-white rounded-full hover:bg-indigo-600 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-colors"
+            disabled={isLoading || !query.trim()}
+          >
+            <SendIcon />
+          </button>
+        </form>
+      </footer>
+    </div>
   );
 } 
