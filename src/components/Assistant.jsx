@@ -29,6 +29,7 @@ export default function Assistant() {
   
   const messagesEndRef = useRef(null);
   const API_URL = import.meta.env.VITE_API_URL;
+  const LOCAL_STORAGE_KEY = 'wbgkp-assistant-messages';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -38,12 +39,39 @@ export default function Assistant() {
     scrollToBottom();
   }, [messages]);
 
+  // Load chat history from localStorage on mount, or set default greeting if none
   useEffect(() => {
-    // Start with a greeting message from the bot
-    setMessages([
-      { id: Date.now(), role: 'assistant', content: "Hello! I'm your Knowledge Packs Assistant. Ask me anything about the knowledge packs and I'll do my best to answer." }
-    ]);
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          if (parsed.length > 0) {
+            setMessages(parsed);
+            return;
+          }
+          // If parsed is an empty array, do not setMessages yet
+          // Wait for user to send a message
+          return;
+        }
+      } catch (e) {
+      }
+    }
+    // Only set default greeting if nothing in storage (null)
+    if (!saved) {
+      setMessages([
+        { id: Date.now(), role: 'assistant', content: "Hello! I'm your Digital Skills. Ask me anything about digital skills policies, projects or implementations and I'll do my best to answer." }
+      ]);
+    }
   }, []);
+
+  // Save chat history to localStorage on every update, but only if there are messages to save
+  useEffect(() => {
+    const messagesToStore = messages.filter(m => !m.isStreaming);
+    if (messagesToStore.length > 0) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messagesToStore));
+    }
+  }, [messages]);
 
   useEffect(() => {
     // Fetch user's country for the third conversation starter
@@ -75,6 +103,12 @@ export default function Assistant() {
     handleSubmit({ preventDefault: () => {} }, starterText);
   };
 
+  // Helper to strip local-only fields before sending to backend
+  const getBackendMessages = (msgs) =>
+    msgs
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(({ role, content }) => ({ role, content }));
+
   const handleSubmit = async (e, overrideQuery) => {
     e.preventDefault();
     const sendQuery = overrideQuery !== undefined ? overrideQuery : query;
@@ -87,10 +121,15 @@ export default function Assistant() {
     setIsLoading(true);
 
     try {
+      // Prepare conversation history for backend
+      const backendMessages = getBackendMessages([
+        ...messages,
+        userMessage
+      ]);
       const response = await fetch(`${API_URL}/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: sendQuery }),
+        body: JSON.stringify({ messages: backendMessages }),
       });
 
       if (!response.body) return;
@@ -134,7 +173,25 @@ export default function Assistant() {
         console.error("Streaming error:", error);
     } finally {
       setIsLoading(false);
+      // After streaming is done, remove isStreaming from the last assistant message
+      setMessages(currentMessages => {
+        const updatedMessages = [...currentMessages];
+        const lastMessageIndex = updatedMessages.length - 1;
+        if (updatedMessages[lastMessageIndex] && updatedMessages[lastMessageIndex].role === 'assistant') {
+          delete updatedMessages[lastMessageIndex].isStreaming;
+        }
+        return updatedMessages;
+      });
     }
+  };
+
+  // Optional: Clear chat button
+  const handleClearChat = () => {
+    setMessages([
+      { id: Date.now(), role: 'assistant', content: "Hello! I'm your Digital Skills. Ask me anything about digital skills policies, projects or implementations and I'll do my best to answer." }
+    ]);
+    setShowStarters(true);
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
   return (
@@ -180,31 +237,33 @@ export default function Assistant() {
 
         {/* Footer Input Area */}
         <footer className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-          {showStarters && (
-            <div className="flex flex-wrap gap-3 mb-4">
-              <button
-                className="px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
-                disabled={isLoading}
-                onClick={() => handleStarter('Help me draft a digital skills policy for my country')}
-              >
-                Help me draft a digital skills policy for my country
-              </button>
-              <button
-                className="px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
-                disabled={isLoading}
-                onClick={() => handleStarter('Give me an overview on what are the available resources')}
-              >
-                Give me an overview on what are the available resources
-              </button>
-              <button
-                className="px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
-                disabled={isLoading || countryLoading}
-                onClick={() => handleStarter(`Tell me a bit about digital skills in ${country}`)}
-              >
-                {countryLoading ? 'Loading country…' : `Tell me a bit about digital skills in ${country}`}
-              </button>
-            </div>
-          )}
+          <div className="mb-2">
+            {showStarters && (
+              <div className="flex flex-wrap gap-3">
+                <button
+                  className="px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                  disabled={isLoading}
+                  onClick={() => handleStarter('Help me draft a digital skills policy for my country')}
+                >
+                  Help me draft a digital skills policy for my country
+                </button>
+                <button
+                  className="px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                  disabled={isLoading}
+                  onClick={() => handleStarter('Give me an overview on what are the available resources')}
+                >
+                  Give me an overview on what are the available resources
+                </button>
+                <button
+                  className="px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                  disabled={isLoading || countryLoading}
+                  onClick={() => handleStarter(`Tell me a bit about digital skills in ${country}`)}
+                >
+                  {countryLoading ? 'Loading country…' : `Tell me a bit about digital skills in ${country}`}
+                </button>
+              </div>
+            )}
+          </div>
           <form onSubmit={handleSubmit} className="relative">
             <input
               id="chat-input"
@@ -223,6 +282,15 @@ export default function Assistant() {
               <SendIcon />
             </button>
           </form>
+          <div className="flex justify-center mt-4">
+            <button
+              className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-xs"
+              onClick={handleClearChat}
+              disabled={isLoading}
+            >
+              Clear Chat
+            </button>
+          </div>
         </footer>
       </div>
   );
