@@ -60,7 +60,7 @@ export default function Assistant() {
     // Only set default greeting if nothing in storage (null)
     if (!saved) {
       setMessages([
-        { id: Date.now(), role: 'assistant', content: "Hello! I'm your Digital Skills. Ask me anything about digital skills policies, projects or implementations and I'll do my best to answer." }
+        { id: Date.now(), role: 'assistant', content: "Hello! I'm your Digital Skills Assistant. Ask me anything about digital skills policies, projects or implementations and I'll do my best to answer." }
       ]);
     }
   }, []);
